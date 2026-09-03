@@ -7,34 +7,26 @@ import {
     ScrollView,
     StatusBar,
 } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
 import { colors, spacing } from '../theme';
 import Card from '../components/Card';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { getIssues, subscribeToIssues } from '../services/issueService';
 
 export default function HomeScreen({ navigation }) {
     const [issues, setIssues] = useState([]);
 
     useEffect(() => {
-        const unsubscribe = firestore()
-            .collection('issues')
-            .orderBy('createdAt', 'desc')
-            .onSnapshot(snapshot => {
-                const data = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }));
-                setIssues(data);
-            });
+        getIssues().then(setIssues).catch(console.error);
+        const unsubscribe = subscribeToIssues(setIssues, console.error);
 
         return () => unsubscribe();
     }, []);
 
     const formatTime = (timestamp) => {
         try {
-            if (!timestamp || !timestamp.toDate) return "just now";
-
-            const date = timestamp.toDate();
+            if (!timestamp) return "just now";
+            const date = new Date(timestamp);
+            if (Number.isNaN(date.getTime())) return "just now";
             const now = new Date();
 
             const diff = Math.floor((now - date) / 1000);
@@ -109,7 +101,7 @@ export default function HomeScreen({ navigation }) {
                             </Text>
 
                             <Text style={styles.issueTime}>
-                                {formatTime(item.createdAt)}
+                                {formatTime(item.created_at)}
                             </Text>
                         </TouchableOpacity>
                     ))

@@ -1,4 +1,8 @@
 {
   "name": "UrbanLens2",
-  "displayName": "UrbanLens2"
+  "displayName": "UrbanLens2",
+  "extra": {
+    "supabaseUrl": "https://wolaytafciwxvfkzhooo.supabase.co",
+    "supabaseAnonKey": "sb_publishable_U08_7ZYFli7Y5FHOzxEYsg_eIJ0LEXt"
+  }
 }

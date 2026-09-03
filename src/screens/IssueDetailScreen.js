@@ -6,17 +6,17 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
-import firestore from "@react-native-firebase/firestore";
 import { colors, spacing } from "../theme";
+import { updateIssue } from "../services/issueService";
 
 export default function IssueDetailScreen({ route }) {
   const { issue } = route.params;
   const [status, setStatus] = useState(issue.status);
 
   const formatTime = (timestamp) => {
-    if (!timestamp || !timestamp.toDate) return "just now";
-
-    const date = timestamp.toDate();
+    if (!timestamp) return "just now";
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return "just now";
     const now = new Date();
     const diff = Math.floor((now - date) / 1000);
 
@@ -29,12 +29,7 @@ export default function IssueDetailScreen({ route }) {
 
   const updateStatus = async (newStatus) => {
     try {
-      await firestore()
-        .collection("issues")
-        .doc(issue.id)
-        .update({
-          status: newStatus,
-        });
+      await updateIssue(issue.id, { status: newStatus });
 
       setStatus(newStatus);
     } catch (e) {
@@ -53,7 +48,7 @@ export default function IssueDetailScreen({ route }) {
       <Text style={styles.value}>{issue.severity}</Text>
 
       <Text style={styles.label}>Reports</Text>
-      <Text style={styles.value}>{issue.reportCount}</Text>
+      <Text style={styles.value}>{issue.report_count}</Text>
 
       <Text style={styles.label}>Status</Text>
       <Text style={styles.value}>{status}</Text>
@@ -83,7 +78,7 @@ export default function IssueDetailScreen({ route }) {
       </View>
 
       <Text style={styles.label}>Time</Text>
-      <Text style={styles.value}>{formatTime(issue.createdAt)}</Text>
+      <Text style={styles.value}>{formatTime(issue.created_at)}</Text>
 
       <Text style={styles.label}>Location</Text>
       <Text style={styles.value}>

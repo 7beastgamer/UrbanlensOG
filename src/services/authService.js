@@ -1,29 +1,34 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from './supabase';
 
-const USER_KEY = "USER";
+export const signIn = async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data.user;
+};
 
-export const saveUser = async (user) => {
-    try {
-        await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
-    } catch (e) {
-        console.log("Save error:", e);
-    }
+export const signUp = async (email, password) => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    return data;
+};
+
+export const signInAsGuest = async () => {
+    const { data, error } = await supabase.auth.signInAnonymously();
+    if (error) throw error;
+    return data.user;
 };
 
 export const getUser = async () => {
-    try {
-        const data = await AsyncStorage.getItem(USER_KEY);
-        return data ? JSON.parse(data) : null;
-    } catch (e) {
-        console.log("Get error:", e);
-        return null;
-    }
+    const { data, error } = await supabase.auth.getUser();
+    return error ? null : data.user;
 };
 
 export const logout = async () => {
-    try {
-        await AsyncStorage.removeItem(USER_KEY);
-    } catch (e) {
-        console.log("Logout error:", e);
-    }
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+};
+
+export const resetPassword = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
 };

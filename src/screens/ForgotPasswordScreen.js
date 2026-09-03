@@ -2,9 +2,20 @@ import React, { useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, StyleSheet
 } from 'react-native';
+import { resetPassword } from '../services/authService';
 
 export default function ForgotPasswordScreen({ navigation }) {
     const [email, setEmail] = useState('');
+
+    const handleReset = async () => {
+        if (!email.trim()) return;
+        try {
+            await resetPassword(email.trim());
+            alert('Password reset link sent.');
+        } catch (error) {
+            alert(error.message);
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -18,7 +29,7 @@ export default function ForgotPasswordScreen({ navigation }) {
                 style={styles.input}
             />
 
-            <TouchableOpacity style={styles.btn}>
+            <TouchableOpacity style={styles.btn} onPress={handleReset}>
                 <Text style={styles.btnText}>Send Reset Link</Text>
             </TouchableOpacity>
 

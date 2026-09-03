@@ -11,7 +11,7 @@ import {
     TouchableOpacity,
 } from 'react-native';
 
-import { saveUser } from '../services/authService';
+import { signIn, signInAsGuest } from '../services/authService';
 import { colors, spacing } from '../theme';
 import Button from '../components/Button';
 import Input from '../components/Input';
@@ -20,6 +20,7 @@ import Card from '../components/Card';
 export default function LoginScreen({ navigation }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -27,13 +28,27 @@ export default function LoginScreen({ navigation }) {
             return;
         }
 
-        await saveUser({ email, type: "user" });
-        navigation.replace("Main");
+        try {
+            setLoading(true);
+            await signIn(email.trim(), password);
+            navigation.replace("Main");
+        } catch (error) {
+            Alert.alert("Sign in failed", error.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleGuest = async () => {
-        await saveUser({ type: "guest" });
-        navigation.replace("Main");
+        try {
+            setLoading(true);
+            await signInAsGuest();
+            navigation.replace("Main");
+        } catch (error) {
+            Alert.alert("Guest access unavailable", error.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -68,7 +83,7 @@ export default function LoginScreen({ navigation }) {
                     />
 
                     <Button
-                        title="Sign In"
+                        title={loading ? "Signing in..." : "Sign In"}
                         onPress={handleLogin}
                         style={styles.loginBtn}
                     />

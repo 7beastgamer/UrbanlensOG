@@ -8,6 +8,8 @@ import MapScreen from '../screens/MapScreen';
 import ReportScreen from '../screens/ReportScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import IssueDetailScreen from '../screens/IssueDetailScreen';
+import SignupScreen from '../screens/SignupScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -39,9 +41,9 @@ function TabNavigator() {
   );
 }
 
-export default function MainNavigator() {
+export default function MainNavigator({ initialRoute = 'Login' }) {
   return (
-    <Stack.Navigator initialRouteName="Login">
+    <Stack.Navigator initialRouteName={initialRoute}>
 
       {/* 🔥 LOGIN FIRST */}
       <Stack.Screen
@@ -49,6 +51,8 @@ export default function MainNavigator() {
         component={LoginScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Forgot" component={ForgotPasswordScreen} options={{ headerShown: false }} />
 
       {/* 🔥 MAIN APP */}
       <Stack.Screen

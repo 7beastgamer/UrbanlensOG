@@ -2,12 +2,12 @@
 
 Urban infrastructure fails quietly. Potholes go unlogged, accidents get forgotten, construction zones catch people off guard — not because no one cares, but because there is no simple way to document and surface these issues in real time. UrbanLens fixes that.
 
-A React Native mobile application that lets anyone report real-world civic issues with photo evidence, GPS coordinates, and category context — then visualizes all reports on a live map. The current MVP runs entirely on-device with local persistence. No backend required to get started.
+A React Native mobile application that lets anyone report real-world civic issues with photo evidence, GPS coordinates, and category context — then visualizes all reports on a live map backed by Supabase.
 
 ---
 
 ## Features
-
+Login, signup, guest access, and persistent Supabase Auth sessions via AsyncStorage.
 **Authentication**
 Login, signup, guest access, and persistent sessions via AsyncStorage.
 
@@ -19,7 +19,7 @@ Severity is auto-assigned at submission based on category and description keywor
 
 **Map View**
 All reported issues rendered as interactive markers on a Leaflet and OpenStreetMap map via WebView. Markers are color-coded by category. Tap any marker to view the full report including image, description, severity, report count, and coordinates. Map auto-focuses on the most recent submission.
-
+Summary of total reports broken down by category with live updates via Supabase Realtime.
 | Category     | Marker Color |
 |--------------|--------------|
 | Pothole      | Red          |
@@ -32,7 +32,7 @@ All reported issues rendered as interactive markers on a Leaflet and OpenStreetM
 Summary of total reports broken down by category with live updates via Firestore listeners. Reflects changes across devices in real time once cloud sync is active.
 
 **Issue Status Lifecycle**
-Each issue progresses through: `open` → `in_progress` → `resolved`. Status can be updated from the issue detail view, transforming the app from a passive reporting tool into an active issue management system.
+| Database      | Supabase Postgres + Realtime         |
 
 **Profile**
 Account info, initial-based avatar, and logout. Functional for both authenticated users and guests.
@@ -42,17 +42,17 @@ Account info, initial-based avatar, and logout. Functional for both authenticate
 ## Tech Stack
 
 | Layer         | Technology                          |
-|---------------|--------------------------------------|
+Supabase serves as both the data store and the realtime event system. Key operations:
 | Frontend      | React Native (CLI), JavaScript ES6+  |
 | Navigation    | React Navigation                     |
 | Local Storage | AsyncStorage                         |
-| Map Rendering | Leaflet + OpenStreetMap via WebView  |
+supabase.from("issues").insert(issue)
 | Camera / Media| React Native Image Picker            |
 | Database      | Firebase Firestore (NoSQL, realtime) |
-
+supabase.channel("issues-realtime").on("postgres_changes", ...)
 ---
 
-## Architecture
+supabase.from("issues").update({ status: "resolved" }).eq("id", id)
 
 The application follows a direct client-to-database loop with no intermediate server:
 
@@ -64,9 +64,9 @@ Firestore serves as both the data store and the realtime event system. Key opera
 
 ```javascript
 // Submit new issue
-firestore().collection("issues").add(issue)
-
-// Listen for live updates
+  "report_count": 1,
+  "user_id": "auth user id",
+  "created_at": "timestamp"
 firestore().collection("issues").onSnapshot(...)
 
 // Update issue status
@@ -76,6 +76,10 @@ firestore().collection("issues").doc(id).update({ status: "resolved" })
 Each issue document:
 
 ```json
+1. Create a Supabase project.
+2. Run `supabase/schema.sql` in the SQL Editor.
+3. Enable Anonymous Sign-Ins in Authentication > Providers for guest access.
+4. Replace the placeholder values in `app.json` with the project URL and anon key. Never put the service-role key in the app.
 {
   "category": "garbage",
   "description": "not collected since Tuesday",

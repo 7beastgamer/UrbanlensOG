@@ -15,12 +15,13 @@ import {
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { launchCamera, launchImageLibrary } from "react-native-image-picker";
 import Geolocation from "@react-native-community/geolocation";
-import firestore from "@react-native-firebase/firestore";
 
 import Button from "../components/Button";
 import Input from "../components/Input";
 import Card from "../components/Card";
 import { colors, spacing } from "../theme";
+import { reportIssue } from "../services/issueService";
+import { getUser } from "../services/authService";
 
 const categories = [
   { id: "pothole", label: "Pothole", icon: "report-problem" },
@@ -29,22 +30,6 @@ const categories = [
   { id: "accident", label: "Accident", icon: "warning" },
   { id: "construction", label: "Construction", icon: "construction" },
 ];
-
-const getDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371000;
-  const toRad = (v) => (v * Math.PI) / 180;
-
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) ** 2;
-
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-};
 
 const getSeverity = (category, description) => {
   const text = description.toLowerCase();
@@ -98,6 +83,7 @@ export default function ReportScreen({ navigation }) {
           );
 
           if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            console.warn("Location permission denied; using default location.");
             resolve({ lat: 12.9716, lng: 77.5946 });
             return;
           }
@@ -110,12 +96,14 @@ export default function ReportScreen({ navigation }) {
               lng: pos.coords.longitude,
             });
           },
-          () => {
+          (error) => {
+            console.warn("Unable to determine device location; using default location.", error);
             resolve({ lat: 12.9716, lng: 77.5946 });
           },
           { enableHighAccuracy: true, timeout: 10000 }
         );
-      } catch {
+      } catch (error) {
+        console.warn("Location lookup failed; using default location.", error);
         resolve({ lat: 12.9716, lng: 77.5946 });
       }
     });
@@ -135,57 +123,20 @@ export default function ReportScreen({ navigation }) {
       const loc = await getLocation();
       const severity = getSeverity(selectedCategory, description);
 
-      const snapshot = await firestore()
-        .collection("issues")
-        .where("category", "==", selectedCategory)
-        .get();
-
-      let duplicateDoc = null;
-
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        if (!data.location) return;
-
-        const dist = getDistance(
-          loc.lat,
-          loc.lng,
-          data.location.lat,
-          data.location.lng
-        );
-
-        if (dist < 100) {
-          duplicateDoc = doc;
-        }
+      const user = await getUser();
+      const result = await reportIssue({
+        category: selectedCategory,
+        description,
+        image: image || null,
+        location: loc,
+        severity,
+        user_id: user?.id,
       });
 
-      if (duplicateDoc) {
-        await firestore()
-          .collection("issues")
-          .doc(duplicateDoc.id)
-          .update({
-            reportCount: firestore.FieldValue.increment(1),
-          });
-
-        Alert.alert("Updated", "Existing issue reinforced");
-      } else {
-        await firestore()
-          .collection("issues")
-          .add({
-            category: selectedCategory,
-            description,
-            image: image || null,
-            location: loc,
-
-            status: "open",
-            severity,
-            reportCount: 1,
-            userId: "temp_user",
-
-            createdAt: firestore.FieldValue.serverTimestamp(),
-          });
-
-        Alert.alert("Success", "New issue created");
-      }
+      Alert.alert(
+        result?.report_count > 1 ? "Updated" : "Success",
+        result?.report_count > 1 ? "Existing issue reinforced" : "New issue created"
+      );
 
       setDescription("");
       setSelectedCategory(null);

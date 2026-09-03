@@ -8,7 +8,7 @@ import {
     Alert,
 } from 'react-native';
 
-import { saveUser } from '../services/authService';
+import { signUp } from '../services/authService';
 
 export default function SignupScreen({ navigation }) {
     const [email, setEmail] = useState('');
@@ -20,11 +20,17 @@ export default function SignupScreen({ navigation }) {
             return;
         }
 
-        await saveUser({ email, type: "user" });
-
-        Alert.alert("Success", "Account created!");
-
-        navigation.replace("App");
+        try {
+            const data = await signUp(email.trim(), password);
+            if (data.session) {
+                navigation.replace("Main");
+            } else {
+                Alert.alert("Check your email", "Confirm your email before signing in.");
+                navigation.goBack();
+            }
+        } catch (error) {
+            Alert.alert("Sign up failed", error.message);
+        }
     };
 
     return (

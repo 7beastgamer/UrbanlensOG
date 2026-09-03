@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from "react-native";
 import { WebView } from "react-native-webview";
-import firestore from "@react-native-firebase/firestore";
+import { getIssues, subscribeToIssues } from "../services/issueService";
 
 const DEFAULT_LOCATION = { lat: 12.9716, lng: 77.5946 };
 
@@ -11,15 +11,8 @@ export default function MapScreen() {
   const [location] = useState(DEFAULT_LOCATION);
 
   useEffect(() => {
-    const unsubscribe = firestore()
-      .collection("issues")
-      .onSnapshot(snapshot => {
-        const data = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setIssues(data);
-      });
+    getIssues().then(setIssues).catch(console.error);
+    const unsubscribe = subscribeToIssues(setIssues, console.error);
 
     return () => unsubscribe();
   }, []);
@@ -29,14 +22,16 @@ export default function MapScreen() {
       ? issues
       : issues.filter(i => i.category === filter);
 
-  const normalizedIssues = filteredIssues.map((i, index) => ({
-    lat: i.location?.lat + (Math.random() - 0.5) * 0.001,
-    lng: i.location?.lng + (Math.random() - 0.5) * 0.001,
+  const normalizedIssues = filteredIssues.filter(i => (
+    Number.isFinite(Number(i.location?.lat)) && Number.isFinite(Number(i.location?.lng))
+  )).map(i => ({
+    lat: Number(i.location.lat) + (Math.random() - 0.5) * 0.001,
+    lng: Number(i.location.lng) + (Math.random() - 0.5) * 0.001,
     category: i.category,
     description: i.description,
     severity: i.severity,
-    reportCount: i.reportCount,
-  })).filter(i => i.lat && i.lng);
+    reportCount: i.report_count,
+  }));
 
   const buildHtml = (loc, issueList) => `
   <!DOCTYPE html>
